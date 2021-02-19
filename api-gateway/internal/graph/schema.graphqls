@@ -1,0 +1,164 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+directive @isAuthenticated on FIELD_DEFINITION
+directive @hasRole(roles: [Role]!) on FIELD_DEFINITION
+
+################## USER ##################
+
+enum Role {
+    admin
+    librarian
+    member
+}
+
+type User {
+    id: ID!
+    email: String!
+    role: Role!
+}
+
+type UserPaged {
+    users: [User!]
+    page: Int!
+    limit: Int!
+    totalUser: Int!
+    lastPage: Int!
+}
+
+input NewUser {
+    email: String!
+    password: String!
+}
+
+input Login {
+    email: String!
+    password: String!
+}
+
+input FetchUserFilter {
+    page: Int
+    limit: Int
+    email: String
+    role: Role
+}
+
+input UpdateUser {
+    id: ID!
+    email: String!
+}
+
+input DeleteUser {
+    email: String!
+}
+
+################## BOOK ##################
+
+type Book {
+    id: ID!
+    title: String!
+    stock: Int!
+}
+
+input NewBook {
+    title: String!
+    stock: Int!
+}
+
+type BookPaged {
+    books: [Book!]
+    page: Int!
+    limit: Int!
+    totalBook: Int!
+    lastPage: Int!
+}
+
+input FetchBookFilter {
+    page: Int
+    limit: Int
+    title: String
+}
+
+input UpdateBook {
+    id: ID!
+    title: String!
+}
+
+input UpdateBookStock {
+    id: ID!
+    stockChange: Int!
+}
+
+input DeleteBook {
+    id: String!
+}
+
+################## LENDING ##################
+
+type Lending {
+    id: ID!
+    bookID: String!
+    userID: String!
+    status: String!
+    returnDate: String!
+}
+
+input NewLending {
+    bookID: String!
+}
+
+input RenewLendingRequest {
+    id: ID!
+}
+
+input FinishLendingRequest {
+    id: ID!
+}
+
+input MyLendingRequest {
+    page: Int
+    limit: Int
+    status: String
+}
+
+input FetchLendingRequest {
+    page: Int
+    limit: Int
+    userID: String
+    status: String
+}
+
+type LendingPaged {
+    lendings: [Lending!]
+    page: Int!
+    limit: Int!
+    totalLending: Int!
+    lastPage: Int!
+}
+
+type Mutation {
+
+    ################## USER ##################
+    registerLibrarian(input: NewUser!): User! @isAuthenticated @hasRole(roles: [admin])
+    registerMember(input: NewUser!): User! @isAuthenticated @hasRole(roles: [librarian])
+    login(input: Login!): String!
+    fetchUser(input: FetchUserFilter!): UserPaged! @isAuthenticated @hasRole(roles: [admin, librarian])
+    updateUser(input: UpdateUser!): User @isAuthenticated @hasRole(roles: [admin])
+    updateSelf(input: UpdateUser!): User @isAuthenticated @hasRole(roles: [librarian, member])
+    deleteUser(input: DeleteUser!): User @isAuthenticated @hasRole(roles: [admin])
+
+    ################## BOOK ##################
+    createBook(input: NewBook!): Book! @isAuthenticated @hasRole(roles: [librarian])
+    fetchBook(input: FetchBookFilter!): BookPaged! @isAuthenticated
+    updateBook(input: UpdateBook!): Book @isAuthenticated @hasRole(roles: [librarian])
+    updateBookStock(input: UpdateBookStock!): Book @isAuthenticated @hasRole(roles: [librarian])
+    deleteBook(input: DeleteBook!): Book @isAuthenticated @hasRole(roles: [librarian])
+
+    ################## LENDING ##################
+    lendBook(input: NewLending!): Lending! @isAuthenticated @hasRole(roles: [member])
+    renewLending(input: RenewLendingRequest!): Lending! @isAuthenticated @hasRole(roles:[librarian])
+    finishLending(input: FinishLendingRequest!): Lending! @isAuthenticated @hasRole(roles:[librarian])
+    myLending(input: MyLendingRequest): LendingPaged! @isAuthenticated @hasRole(roles: [member])
+    fetchLending(input: FetchLendingRequest): LendingPaged! @isAuthenticated @hasRole(roles: [librarian])
+}

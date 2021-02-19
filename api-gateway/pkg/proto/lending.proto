@@ -1,0 +1,59 @@
+syntax = "proto3";
+package lending;
+
+option go_package = ".;proto";
+
+import "google/protobuf/timestamp.proto";
+
+service LendingService {
+  rpc CreateLending(CreateLendingRequest) returns (Lending) {}
+  rpc FetchLending(FetchLendingRequest) returns (FetchLendingResponse) {}
+  rpc RenewLending(RenewLendingRequest) returns (Lending) {}
+  rpc FinishLending(FinishLendingRequest) returns (Lending) {}
+}
+
+message CreateLendingRequest {
+  string book_id = 1;
+  string user_id = 2;
+}
+
+message Lending {
+  string id = 1;
+  string book_id = 2;
+  string user_id = 3;
+  string status = 4;
+  google.protobuf.Timestamp return_date = 5;
+}
+
+message FetchLendingRequest {
+  LendingPaginationRequest pagination = 1;
+  string book_id = 2;
+  string user_id = 3;
+  string status = 4;
+  bool pass_return_date = 5;
+}
+
+message FetchLendingResponse {
+  LendingPaginationResponse pagination = 1;
+  repeated Lending lendings = 2;
+}
+
+message LendingPaginationRequest {
+  int32 limit = 1;
+  int32 page = 2;
+}
+
+message LendingPaginationResponse {
+  int32 limit = 1;
+  int32 page = 2;
+  int32 last_page = 3;
+  int32 total = 4;
+}
+
+message RenewLendingRequest {
+  string id = 1;
+}
+
+message FinishLendingRequest {
+  string id = 1;
+}

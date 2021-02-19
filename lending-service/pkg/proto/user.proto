@@ -1,0 +1,86 @@
+syntax = "proto3";
+package user;
+
+option go_package = ".;proto";
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (User) {}
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+  rpc FetchUser(FetchUserRequest) returns (FetchUserResponse) {}
+  rpc FindByID(FindByIDRequest) returns (User) {}
+  rpc FindByEmail(FindByEmailRequest) returns (User) {}
+  rpc UpdateUser(UpdateUserRequest) returns (User) {}
+  rpc UpdateSelf(UpdateSelfRequest) returns (User) {}
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {}
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string password = 2;
+  string role = 3;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string role = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message FetchUserRequest {
+  PaginationRequest pagination = 1;
+  string email = 2;
+  string role = 3;
+}
+
+message FetchUserResponse {
+  PaginationResponse pagination = 1;
+  repeated User users = 2;
+}
+
+message PaginationRequest {
+  int32 limit = 1;
+  int32 page = 2;
+}
+
+message PaginationResponse {
+  int32 limit = 1;
+  int32 page = 2;
+  int32 last_page = 3;
+  int32 total = 4;
+}
+
+message FindByIDRequest {
+  string id = 1;
+}
+
+message FindByEmailRequest {
+  string email = 1;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string email = 2;
+}
+
+message UpdateSelfRequest {
+  string selfEmail = 1;
+  string id = 2;
+  string email = 3;
+}
+
+message DeleteUserRequest {
+  string email = 1;
+}
+
+message DeleteUserResponse {
+
+}
