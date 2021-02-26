@@ -178,6 +178,14 @@ func (s *LendingGRPCService) FinishLending(ctx context.Context, request *proto.F
 		return nil, err
 	}
 
+	_, err = s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{
+		Id:          lending.BookID.Hex(),
+		StockChange: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &proto.Lending{
 		Id:         lending.ID.Hex(),
 		BookId:     lending.BookID.Hex(),
