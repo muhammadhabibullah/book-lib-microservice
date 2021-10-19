@@ -4,8 +4,8 @@ go 1.15
 
 require (
 	github.com/99designs/gqlgen v0.13.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.4
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.4.2
 	github.com/joho/godotenv v1.3.0
 	github.com/stretchr/testify v1.6.1 // indirect
