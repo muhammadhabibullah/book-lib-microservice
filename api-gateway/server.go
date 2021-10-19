@@ -12,7 +12,7 @@ import (
 	grpcClient "api-gateway/internal/grpc"
 	httpHandler "api-gateway/internal/http"
 	"api-gateway/internal/middleware"
-	proto "api-gateway/pkg/proto/gen"
+	"api-gateway/pkg/proto"
 )
 
 const defaultPort = ":8000"

@@ -7,7 +7,7 @@ import (
 
 	"api-gateway/internal/domain/constant"
 	"api-gateway/internal/graph/model"
-	proto "api-gateway/pkg/proto/gen"
+	"api-gateway/pkg/proto"
 )
 
 type LendingGRPCService struct {

@@ -11,7 +11,7 @@ import (
 
 	"book-service/internal/domain"
 	"book-service/internal/repository"
-	proto "book-service/pkg/proto/gen"
+	"book-service/pkg/proto"
 )
 
 type BookGRPCService struct {

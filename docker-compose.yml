@@ -10,7 +10,7 @@ services:
     build:
       context: ./api-gateway
     ports:
-      - 8000:8000
+      - '8000:8000'
     environment:
       HTTP_PORT: ':8000'
       JWT_SECRET_KEY: 'secret'
@@ -31,7 +31,7 @@ services:
     build:
       context: ./user-service
     ports:
-      - 3000:8000
+      - '3000:8000'
     environment:
       GRPC_PORT: ':8000'
       JWT_SECRET_KEY: 'secret'
@@ -50,7 +50,7 @@ services:
     build:
       context: ./book-service
     ports:
-      - 3001:8000
+      - '3001:8000'
     environment:
       GRPC_PORT: ':8000'
       MONGODB_URI: 'mongodb://mongo:27017'
@@ -64,7 +64,7 @@ services:
     build:
       context: ./lending-service
     ports:
-      - 3002:8000
+      - '3002:8000'
     environment:
       GRPC_PORT: ':8000'
       MONGODB_URI: 'mongodb://mongo:27017'
@@ -82,7 +82,7 @@ services:
   mongo:
     image: mongo:4.2
     ports:
-      - 37017:27017
+      - '37017:27017'
     command: mongod
     networks:
       - book-lib-microservice
