@@ -11,7 +11,7 @@ import (
 
 	"lending-service/internal/service"
 	"lending-service/pkg/mongodb"
-	proto "lending-service/pkg/proto/gen"
+	"lending-service/pkg/proto"
 )
 
 const defaultPort = ":8000"

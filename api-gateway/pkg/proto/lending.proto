@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lending;
 
-option go_package = ".;proto";
+option go_package = "pkg/proto";
 
 import "google/protobuf/timestamp.proto";
 

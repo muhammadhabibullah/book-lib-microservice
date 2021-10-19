@@ -14,7 +14,7 @@ import (
 	"user-service/internal/repository"
 	"user-service/pkg/jwt"
 	"user-service/pkg/password"
-	proto "user-service/pkg/proto/gen"
+	"user-service/pkg/proto"
 )
 
 type UserGRPCService struct {

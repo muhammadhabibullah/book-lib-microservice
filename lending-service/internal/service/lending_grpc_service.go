@@ -13,7 +13,7 @@ import (
 	"lending-service/internal/domain"
 	"lending-service/internal/domain/constant"
 	"lending-service/internal/repository"
-	proto "lending-service/pkg/proto/gen"
+	"lending-service/pkg/proto"
 )
 
 const (

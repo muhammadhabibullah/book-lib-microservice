@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"api-gateway/internal/graph/model"
-	proto "api-gateway/pkg/proto/gen"
+	"api-gateway/pkg/proto"
 )
 
 type BookGRPCService struct {

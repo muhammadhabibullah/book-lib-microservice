@@ -10,7 +10,7 @@ import (
 
 	"book-service/internal/service"
 	"book-service/pkg/mongodb"
-	proto "book-service/pkg/proto/gen"
+	"book-service/pkg/proto"
 )
 
 const defaultPort = ":8000"
