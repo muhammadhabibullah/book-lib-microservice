@@ -10,7 +10,7 @@ import (
 
 	"user-service/internal/service"
 	"user-service/pkg/mongodb"
-	proto "user-service/pkg/proto"
+	"user-service/pkg/proto"
 )
 
 const defaultPort = ":8000"
