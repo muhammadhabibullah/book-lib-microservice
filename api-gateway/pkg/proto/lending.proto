@@ -6,7 +6,7 @@ option go_package = "pkg/proto";
 import "google/protobuf/timestamp.proto";
 
 service LendingService {
-  rpc CreateLending(CreateLendingRequest) returns (Lending) {}
+  rpc CreateLending(CreateLendingRequest) returns (stream Lending) {}
   rpc FetchLending(FetchLendingRequest) returns (FetchLendingResponse) {}
   rpc RenewLending(RenewLendingRequest) returns (Lending) {}
   rpc FinishLending(FinishLendingRequest) returns (Lending) {}

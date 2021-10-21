@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"log"
 	"math"
 	"time"
 
@@ -41,61 +40,114 @@ func NewLendingGRPCService(
 	}
 }
 
-func (s *LendingGRPCService) CreateLending(ctx context.Context, request *proto.CreateLendingRequest) (*proto.Lending, error) {
+func (s *LendingGRPCService) CreateLending(request *proto.CreateLendingRequest, stream proto.LendingService_CreateLendingServer) error {
+	ctx := context.Background()
+
 	userID, err := primitive.ObjectIDFromHex(request.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid user ID: %s", request.UserId)
+		return status.Errorf(codes.InvalidArgument, "invalid user ID: %s", request.UserId)
 	}
 
 	book, err := s.bookServiceClient.FindByID(ctx, &proto.FindBookByIDRequest{
 		Id: request.BookId,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if book.Stock == 0 {
-		return nil, status.Error(codes.Aborted, "book stock is empty")
-	}
-
-	book, err = s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{
-		Id:          book.Id,
-		StockChange: -1,
-	})
-	if err != nil {
-		return nil, err
+		return status.Error(codes.Aborted, "book stock is empty")
 	}
 
 	bookID, _ := primitive.ObjectIDFromHex(book.Id)
 	lending := domain.Lending{
 		BookID:     bookID,
 		UserID:     userID,
-		Status:     constant.LendingActive,
+		Status:     constant.LendingDraft,
 		ReturnDate: time.Now().Add(defaultLendingDuration * time.Hour),
 	}
 
 	err = s.lendingRepository.Create(ctx, &lending)
 	if err != nil {
-		go func(id string) {
-			_, err := s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{
-				Id:          id,
-				StockChange: 1,
-			})
-			if err != nil {
-				log.Printf("error update book stock after failed create lending: %s\n", err)
-			}
-		}(book.Id)
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return status.Error(codes.Internal, err.Error())
 	}
 
-	return &proto.Lending{
+	err = stream.Send(&proto.Lending{
 		Id:         lending.ID.Hex(),
 		BookId:     lending.BookID.Hex(),
 		UserId:     lending.UserID.Hex(),
 		Status:     string(lending.Status),
 		ReturnDate: timestamppb.New(lending.ReturnDate),
-	}, nil
+	})
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{
+		Id:          book.Id,
+		StockChange: -1,
+	})
+	if err != nil {
+		lending.Status = constant.LendingCanceled
+		cancelErr := s.cancelCreateLending(ctx, lending, stream)
+		if cancelErr != nil {
+			return status.Error(codes.Internal, cancelErr.Error())
+		}
+
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	lending.Status = constant.LendingActive
+	err = s.lendingRepository.Update(ctx, &lending)
+	if err != nil {
+		_, cancelBookErr := s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{
+			Id:          book.Id,
+			StockChange: 1,
+		})
+		if cancelBookErr != nil {
+			return status.Error(codes.Internal, cancelBookErr.Error())
+		}
+
+		cancelErr := s.cancelCreateLending(ctx, lending, stream)
+		if cancelErr != nil {
+			return status.Error(codes.Internal, cancelErr.Error())
+		}
+
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	err = stream.Send(&proto.Lending{
+		Id:         lending.ID.Hex(),
+		BookId:     lending.BookID.Hex(),
+		UserId:     lending.UserID.Hex(),
+		Status:     string(lending.Status),
+		ReturnDate: timestamppb.New(lending.ReturnDate),
+	})
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return nil
+}
+
+func (s *LendingGRPCService) cancelCreateLending(ctx context.Context, lending domain.Lending, stream proto.LendingService_CreateLendingServer) error {
+	err := s.lendingRepository.Update(ctx, &lending)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	err = stream.Send(&proto.Lending{
+		Id:         lending.ID.Hex(),
+		BookId:     lending.BookID.Hex(),
+		UserId:     lending.UserID.Hex(),
+		Status:     string(lending.Status),
+		ReturnDate: timestamppb.New(lending.ReturnDate),
+	})
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return nil
 }
 
 func (s *LendingGRPCService) FetchLending(ctx context.Context, request *proto.FetchLendingRequest) (*proto.FetchLendingResponse, error) {

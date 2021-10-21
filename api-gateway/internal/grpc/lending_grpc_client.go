@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 
 	"api-gateway/internal/domain/constant"
@@ -29,7 +30,7 @@ func (c *LendingGRPCService) LendBook(ctx context.Context, input model.NewLendin
 		return nil, errors.New("missing userID on authorization token")
 	}
 
-	lending, err := c.client.CreateLending(ctx, &proto.CreateLendingRequest{
+	stream, err := c.client.CreateLending(ctx, &proto.CreateLendingRequest{
 		BookId: input.BookID,
 		UserId: selfUserID,
 	})
@@ -42,13 +43,41 @@ func (c *LendingGRPCService) LendBook(ctx context.Context, input model.NewLendin
 		return nil, err
 	}
 
-	return &model.Lending{
-		ID:         lending.GetId(),
-		BookID:     lending.GetBookId(),
-		UserID:     lending.GetUserId(),
-		Status:     lending.GetStatus(),
-		ReturnDate: lending.GetReturnDate().String(),
-	}, nil
+	var lending *model.Lending
+
+	for {
+		lendingStream, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Println(err)
+			if err := grpc.ParseErrorStatus(err); err != nil {
+				return nil, err
+			}
+
+			return nil, err
+		}
+
+		lending = &model.Lending{
+			ID:         lendingStream.GetId(),
+			BookID:     lendingStream.GetBookId(),
+			UserID:     lendingStream.GetUserId(),
+			Status:     lendingStream.GetStatus(),
+			ReturnDate: lendingStream.GetReturnDate().String(),
+		}
+
+		switch constant.LendingStatus(lending.Status) {
+		case constant.LendingActive:
+			return lending, nil
+		case constant.LendingCanceled:
+			return lending, errors.New("failed to lend book")
+		default:
+			log.Printf("received lending stream: %+v", lending)
+		}
+	}
+
+	return lending, nil
 }
 
 func (c *LendingGRPCService) RenewLending(ctx context.Context, input model.RenewLendingRequest) (*model.Lending, error) {
