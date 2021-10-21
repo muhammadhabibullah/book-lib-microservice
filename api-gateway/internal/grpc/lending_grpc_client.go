@@ -7,6 +7,7 @@ import (
 
 	"api-gateway/internal/domain/constant"
 	"api-gateway/internal/graph/model"
+	"api-gateway/pkg/grpc"
 	"api-gateway/pkg/proto"
 )
 
@@ -34,6 +35,10 @@ func (c *LendingGRPCService) LendBook(ctx context.Context, input model.NewLendin
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -52,6 +57,10 @@ func (c *LendingGRPCService) RenewLending(ctx context.Context, input model.Renew
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -70,6 +79,10 @@ func (c *LendingGRPCService) FinishLending(ctx context.Context, input model.Fini
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -127,6 +140,11 @@ func (c *LendingGRPCService) FetchLending(ctx context.Context, input *model.Fetc
 		Status: status,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 

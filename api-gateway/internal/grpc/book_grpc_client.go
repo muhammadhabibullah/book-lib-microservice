@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"api-gateway/internal/graph/model"
+	"api-gateway/pkg/grpc"
 	"api-gateway/pkg/proto"
 )
 
@@ -26,6 +27,10 @@ func (c *BookGRPCService) CreateBook(ctx context.Context, input model.NewBook) (
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -60,6 +65,11 @@ func (c *BookGRPCService) FetchBook(ctx context.Context, filter model.FetchBookF
 		Title: title,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -86,6 +96,11 @@ func (c *BookGRPCService) FindByID(ctx context.Context, id string) (*model.Book,
 		Id: id,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -101,6 +116,11 @@ func (c *BookGRPCService) FindByTitle(ctx context.Context, title string) (*model
 		Title: title,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -118,6 +138,10 @@ func (c *BookGRPCService) UpdateBook(ctx context.Context, input model.UpdateBook
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -135,6 +159,10 @@ func (c *BookGRPCService) UpdateBookStock(ctx context.Context, input model.Updat
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -150,6 +178,11 @@ func (c *BookGRPCService) DeleteBook(ctx context.Context, input model.DeleteBook
 		Id: input.ID,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return err
+		}
+
 		return err
 	}
 

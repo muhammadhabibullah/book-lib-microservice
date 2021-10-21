@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"book-service/internal/domain"
 	"book-service/internal/repository"
@@ -31,7 +33,7 @@ func (s *BookGRPCService) CreateBook(ctx context.Context, request *proto.CreateB
 	}
 
 	if err := s.bookRepository.Create(ctx, &book); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.Book{
@@ -53,7 +55,7 @@ func (s *BookGRPCService) FetchBook(ctx context.Context, request *proto.FetchBoo
 
 	books, err := s.bookRepository.Fetch(ctx, fetchFilter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	protoBooks := make([]*proto.Book, 0)
@@ -67,7 +69,7 @@ func (s *BookGRPCService) FetchBook(ctx context.Context, request *proto.FetchBoo
 
 	total, err := s.bookRepository.Count(ctx, fetchFilter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.FetchBookResponse{
@@ -84,7 +86,10 @@ func (s *BookGRPCService) FetchBook(ctx context.Context, request *proto.FetchBoo
 func (s *BookGRPCService) FindByID(ctx context.Context, request *proto.FindBookByIDRequest) (*proto.Book, error) {
 	book, err := s.bookRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "book with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.Book{
@@ -97,7 +102,10 @@ func (s *BookGRPCService) FindByID(ctx context.Context, request *proto.FindBookB
 func (s *BookGRPCService) FindByTitle(ctx context.Context, request *proto.FindBookByTitleRequest) (*proto.Book, error) {
 	book, err := s.bookRepository.FindByTitle(ctx, request.Title)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "book with %s title is not found", request.Title)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.Book{
@@ -110,14 +118,17 @@ func (s *BookGRPCService) FindByTitle(ctx context.Context, request *proto.FindBo
 func (s *BookGRPCService) UpdateBook(ctx context.Context, request *proto.UpdateBookRequest) (*proto.Book, error) {
 	book, err := s.bookRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "book with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	book.Title = request.Title
 
 	err = s.bookRepository.Update(ctx, &book)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.Book{
@@ -129,7 +140,7 @@ func (s *BookGRPCService) UpdateBook(ctx context.Context, request *proto.UpdateB
 
 func (s *BookGRPCService) UpdateBookStock(ctx context.Context, request *proto.UpdateBookStockRequest) (*proto.Book, error) {
 	if request.StockChange == 0 {
-		return nil, errors.New("stock change requested is 0")
+		return nil, status.Error(codes.InvalidArgument, "stock change requested is 0")
 	}
 
 	retry := 3
@@ -137,26 +148,29 @@ func (s *BookGRPCService) UpdateBookStock(ctx context.Context, request *proto.Up
 	for {
 		book, err := s.bookRepository.FindByID(ctx, request.Id)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return nil, status.Errorf(codes.NotFound, "book with %s ID is not found", request.Id)
+			}
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		newStock := book.Stock + int(request.StockChange)
 		if newStock < 0 {
-			return nil, errors.New("stock cannot be decreased to below 0")
+			return nil, status.Error(codes.Aborted, "stock cannot be decreased to below 0")
 		}
 
 		err = s.bookRepository.UpdateStock(ctx, &book, newStock)
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) && retry >= 0 {
 				time.Sleep(200 * time.Millisecond)
-				retry++
+				retry--
 				continue
 			}
 			if retry == 0 {
 				err = fmt.Errorf("failed update stock after retry 3 times: %w", err)
 			}
 
-			return nil, err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		return &proto.Book{
@@ -170,12 +184,15 @@ func (s *BookGRPCService) UpdateBookStock(ctx context.Context, request *proto.Up
 func (s *BookGRPCService) DeleteBook(ctx context.Context, request *proto.DeleteBookRequest) (*proto.DeleteBookResponse, error) {
 	book, err := s.bookRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "book with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	err = s.bookRepository.Delete(ctx, &book)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.DeleteBookResponse{}, nil

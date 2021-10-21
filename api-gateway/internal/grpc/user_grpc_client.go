@@ -7,6 +7,7 @@ import (
 
 	"api-gateway/internal/domain/constant"
 	"api-gateway/internal/graph/model"
+	"api-gateway/pkg/grpc"
 	"api-gateway/pkg/proto"
 )
 
@@ -30,6 +31,10 @@ func (c *UserGRPCService) CreateUser(ctx context.Context, input model.NewUser, r
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -47,6 +52,10 @@ func (c *UserGRPCService) Login(ctx context.Context, input model.Login) (string,
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return "", err
+		}
+
 		return "", err
 	}
 
@@ -83,6 +92,10 @@ func (c *UserGRPCService) FetchUser(ctx context.Context, filter model.FetchUserF
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -109,6 +122,11 @@ func (c *UserGRPCService) FindByID(ctx context.Context, id string) (*model.User,
 		Id: id,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -124,6 +142,11 @@ func (c *UserGRPCService) FindByEmail(ctx context.Context, email string) (*model
 		Email: email,
 	})
 	if err != nil {
+		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -141,6 +164,10 @@ func (c *UserGRPCService) UpdateUser(ctx context.Context, input model.UpdateUser
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -164,6 +191,10 @@ func (c *UserGRPCService) UpdateSelf(ctx context.Context, input model.UpdateUser
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return nil, err
+		}
+
 		return nil, err
 	}
 
@@ -180,6 +211,10 @@ func (c *UserGRPCService) DeleteUser(ctx context.Context, input model.DeleteUser
 	})
 	if err != nil {
 		log.Println(err)
+		if err := grpc.ParseErrorStatus(err); err != nil {
+			return err
+		}
+
 		return err
 	}
 

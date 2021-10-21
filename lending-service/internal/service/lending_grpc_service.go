@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"lending-service/internal/domain"
@@ -41,7 +44,7 @@ func NewLendingGRPCService(
 func (s *LendingGRPCService) CreateLending(ctx context.Context, request *proto.CreateLendingRequest) (*proto.Lending, error) {
 	userID, err := primitive.ObjectIDFromHex(request.UserId)
 	if err != nil {
-		return nil, errors.New("invalid user ID")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid user ID: %s", request.UserId)
 	}
 
 	book, err := s.bookServiceClient.FindByID(ctx, &proto.FindBookByIDRequest{
@@ -52,7 +55,7 @@ func (s *LendingGRPCService) CreateLending(ctx context.Context, request *proto.C
 	}
 
 	if book.Stock == 0 {
-		return nil, errors.New("book stock is empty")
+		return nil, status.Error(codes.Aborted, "book stock is empty")
 	}
 
 	book, err = s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{
@@ -83,7 +86,7 @@ func (s *LendingGRPCService) CreateLending(ctx context.Context, request *proto.C
 			}
 		}(book.Id)
 
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.Lending{
@@ -101,8 +104,8 @@ func (s *LendingGRPCService) FetchLending(ctx context.Context, request *proto.Fe
 		"page":  page,
 		"limit": limit,
 	}
-	if status := request.Status; status != "" {
-		fetchFilter["status"] = status
+	if requestStatus := request.Status; requestStatus != "" {
+		fetchFilter["status"] = requestStatus
 	}
 	if userID := request.UserId; userID != "" {
 		fetchFilter["user_id"] = userID
@@ -113,7 +116,7 @@ func (s *LendingGRPCService) FetchLending(ctx context.Context, request *proto.Fe
 
 	lendings, err := s.lendingRepository.Fetch(ctx, fetchFilter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	protoLendings := make([]*proto.Lending, 0)
@@ -129,7 +132,7 @@ func (s *LendingGRPCService) FetchLending(ctx context.Context, request *proto.Fe
 
 	total, err := s.lendingRepository.Count(ctx, fetchFilter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.FetchLendingResponse{
@@ -146,14 +149,17 @@ func (s *LendingGRPCService) FetchLending(ctx context.Context, request *proto.Fe
 func (s *LendingGRPCService) RenewLending(ctx context.Context, request *proto.RenewLendingRequest) (*proto.Lending, error) {
 	lending, err := s.lendingRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "lending with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	lending.ReturnDate = time.Now().Add(defaultLendingDuration * time.Hour)
 
 	err = s.lendingRepository.Update(ctx, &lending)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.Lending{
@@ -168,14 +174,17 @@ func (s *LendingGRPCService) RenewLending(ctx context.Context, request *proto.Re
 func (s *LendingGRPCService) FinishLending(ctx context.Context, request *proto.FinishLendingRequest) (*proto.Lending, error) {
 	lending, err := s.lendingRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "lending with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	lending.Status = constant.LendingInactive
 
 	err = s.lendingRepository.Update(ctx, &lending)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	_, err = s.bookServiceClient.UpdateBookStock(ctx, &proto.UpdateBookStockRequest{

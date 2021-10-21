@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"user-service/internal/domain"
 	"user-service/internal/domain/constant"
@@ -41,9 +42,9 @@ func (s *UserGRPCService) CreateUser(ctx context.Context, request *proto.CreateU
 
 	if err := s.userRepository.Create(ctx, &user); err != nil {
 		if strings.Contains(err.Error(), constant.UserEmailUniqueIndex) {
-			return nil, fmt.Errorf("email %s already registered", user.Email)
+			return nil, status.Errorf(codes.AlreadyExists, "email %s already registered", user.Email)
 		}
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.User{
@@ -57,21 +58,21 @@ func (s *UserGRPCService) Login(ctx context.Context, request *proto.LoginRequest
 	user, err := s.userRepository.FindByEmail(ctx, request.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, errors.New("email not found")
+			return nil, status.Errorf(codes.NotFound, "account with %s email is not found", user.Email)
 		}
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if user.Meta.DeletedAt != nil {
-		return nil, errors.New("your account is deleted")
+		return nil, status.Errorf(codes.NotFound, "account with %s email is deleted", user.Email)
 	}
 	if !password.Valid(request.Password, user.HashedPassword) {
-		return nil, errors.New("wrong password")
+		return nil, status.Error(codes.Unauthenticated, "wrong password")
 	}
 
 	token, err := s.jwtService.GenerateToken(user.ID.Hex(), user.Email, user.Role)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.LoginResponse{
@@ -94,7 +95,7 @@ func (s *UserGRPCService) FetchUser(ctx context.Context, request *proto.FetchUse
 
 	users, err := s.userRepository.Fetch(ctx, fetchFilter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	protoUsers := make([]*proto.User, 0)
@@ -108,7 +109,7 @@ func (s *UserGRPCService) FetchUser(ctx context.Context, request *proto.FetchUse
 
 	total, err := s.userRepository.Count(ctx, fetchFilter)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.FetchUserResponse{
@@ -125,7 +126,10 @@ func (s *UserGRPCService) FetchUser(ctx context.Context, request *proto.FetchUse
 func (s *UserGRPCService) FindByID(ctx context.Context, request *proto.FindByIDRequest) (*proto.User, error) {
 	user, err := s.userRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "account with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.User{
@@ -138,7 +142,10 @@ func (s *UserGRPCService) FindByID(ctx context.Context, request *proto.FindByIDR
 func (s *UserGRPCService) FindByEmail(ctx context.Context, request *proto.FindByEmailRequest) (*proto.User, error) {
 	user, err := s.userRepository.FindByEmail(ctx, request.Email)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "account with %s email is not found", request.Email)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.User{
@@ -151,7 +158,10 @@ func (s *UserGRPCService) FindByEmail(ctx context.Context, request *proto.FindBy
 func (s *UserGRPCService) UpdateUser(ctx context.Context, request *proto.UpdateUserRequest) (*proto.User, error) {
 	user, err := s.userRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "account with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	user.Email = request.Email
@@ -159,9 +169,9 @@ func (s *UserGRPCService) UpdateUser(ctx context.Context, request *proto.UpdateU
 	err = s.userRepository.Update(ctx, &user)
 	if err != nil {
 		if strings.Contains(err.Error(), constant.UserEmailUniqueIndex) {
-			return nil, fmt.Errorf("email %s already registered", user.Email)
+			return nil, status.Errorf(codes.AlreadyExists, "email %s already registered", user.Email)
 		}
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.User{
@@ -174,10 +184,13 @@ func (s *UserGRPCService) UpdateUser(ctx context.Context, request *proto.UpdateU
 func (s *UserGRPCService) UpdateSelf(ctx context.Context, request *proto.UpdateSelfRequest) (*proto.User, error) {
 	user, err := s.userRepository.FindByID(ctx, request.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "account with %s ID is not found", request.Id)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if request.SelfEmail != user.Email {
-		return nil, errors.New("unauthorized to change other user data")
+		return nil, status.Error(codes.PermissionDenied, "unauthorized to change other user data")
 	}
 
 	user.Email = request.Email
@@ -185,9 +198,9 @@ func (s *UserGRPCService) UpdateSelf(ctx context.Context, request *proto.UpdateS
 	err = s.userRepository.Update(ctx, &user)
 	if err != nil {
 		if strings.Contains(err.Error(), constant.UserEmailUniqueIndex) {
-			return nil, fmt.Errorf("email %s already registered", user.Email)
+			return nil, status.Errorf(codes.AlreadyExists, "email %s already registered", user.Email)
 		}
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.User{
@@ -200,12 +213,15 @@ func (s *UserGRPCService) UpdateSelf(ctx context.Context, request *proto.UpdateS
 func (s *UserGRPCService) DeleteUser(ctx context.Context, request *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
 	user, err := s.userRepository.FindByEmail(ctx, request.Email)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, status.Errorf(codes.NotFound, "account with %s email is not found", request.Email)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	err = s.userRepository.Delete(ctx, &user)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &proto.DeleteUserResponse{}, nil
