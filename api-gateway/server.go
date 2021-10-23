@@ -83,31 +83,37 @@ func main() {
 		}()
 	}
 
-	userGRPCClientConn, err := grpc.Dial(
+	grpcDialCtx, cancelGRPCDial := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelGRPCDial()
+
+	userGRPCClientConn, err := grpc.DialContext(
+		grpcDialCtx,
 		fmt.Sprintf("%s%s", os.Getenv("USER_SERVICE_HOST"), os.Getenv("USER_SERVICE_PORT")),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error dial to user service: %v", err)
 	}
 
-	bookGRPCClientConn, err := grpc.Dial(
+	bookGRPCClientConn, err := grpc.DialContext(
+		grpcDialCtx,
 		fmt.Sprintf("%s%s", os.Getenv("BOOK_SERVICE_HOST"), os.Getenv("BOOK_SERVICE_PORT")),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error dial to book service: %v", err)
 	}
 
-	lendingGRPCClientConn, err := grpc.Dial(
+	lendingGRPCClientConn, err := grpc.DialContext(
+		grpcDialCtx,
 		fmt.Sprintf("%s%s", os.Getenv("LENDING_SERVICE_HOST"), os.Getenv("LENDING_SERVICE_PORT")),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error dial to lending service: %v", err)
 	}
 
 	userServiceClient := proto.NewUserServiceClient(userGRPCClientConn)
