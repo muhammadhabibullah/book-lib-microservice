@@ -114,9 +114,11 @@ func main() {
 		defer cancel()
 
 		server.GracefulStop()
-		pprof.StopCPUProfile()
-		if err := pprofServer.Shutdown(ctx); err != nil {
-			log.Println(err)
+		if enableProf {
+			pprof.StopCPUProfile()
+			if err := pprofServer.Shutdown(ctx); err != nil {
+				log.Println(err)
+			}
 		}
 	}()
 

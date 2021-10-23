@@ -152,9 +152,11 @@ func main() {
 		if err := httpServer.Shutdown(ctx); err != nil {
 			log.Println(err)
 		}
-		pprof.StopCPUProfile()
-		if err := pprofServer.Shutdown(ctx); err != nil {
-			log.Println(err)
+		if enableProf {
+			pprof.StopCPUProfile()
+			if err := pprofServer.Shutdown(ctx); err != nil {
+				log.Println(err)
+			}
 		}
 	}()
 
