@@ -1,4 +1,4 @@
 .env
 *.prof
 *.mprof
-book-service-*
+lending-service-*

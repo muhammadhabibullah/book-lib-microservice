@@ -158,6 +158,7 @@ func main() {
 		}
 	}()
 
+	log.Println("starting to serve")
 	if err = httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}

@@ -17,6 +17,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"lending-service/internal/service"
 	"lending-service/pkg/mongodb"
@@ -109,6 +110,8 @@ func main() {
 	server := grpc.NewServer()
 	proto.RegisterLendingServiceServer(server, lendingGRPCService)
 
+	reflection.Register(server)
+
 	grpcPort := os.Getenv("GRPC_PORT")
 	if grpcPort == "" {
 		grpcPort = defaultGRPCPort
@@ -139,6 +142,7 @@ func main() {
 		}
 	}()
 
+	log.Println("starting to serve")
 	if err = server.Serve(listener); err != nil {
 		log.Fatalln(err)
 	}

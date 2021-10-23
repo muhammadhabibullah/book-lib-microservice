@@ -10,16 +10,10 @@ services:
     build:
       context: ./api-gateway
     ports:
-      - '8000:8000'
-    environment:
-      HTTP_PORT: ':8000'
-      JWT_SECRET_KEY: 'secret'
-      USER_SERVICE_HOST: 'user-service'
-      USER_SERVICE_PORT: ':8000'
-      BOOK_SERVICE_HOST: 'book-service'
-      BOOK_SERVICE_PORT: ':8000'
-      LENDING_SERVICE_HOST: 'lending-service'
-      LENDING_SERVICE_PORT: ':8000'
+      - "6000:6060"
+      - "8000:8000"
+    env_file:
+      - api-gateway/.docker.env
     networks:
       - book-lib-microservice
     depends_on:
@@ -31,16 +25,10 @@ services:
     build:
       context: ./user-service
     ports:
-      - '3000:8000'
-    environment:
-      GRPC_PORT: ':8000'
-      JWT_SECRET_KEY: 'secret'
-      MONGODB_URI: 'mongodb://mongo:27017'
-      MONGODB_DATABASE: 'user-service'
-      ADMIN_EMAIL: 'admin@lib.com'
-      LIBRARIAN_EMAIL: 'librarian@lib.com'
-      MEMBER_EMAIL: 'member@lib.com'
-      DEFAULT_USER_PASSWORD: 'lib'
+      - "6060:6060"
+      - "3000:8000"
+    env_file:
+      - user-service/.docker.env
     networks:
       - book-lib-microservice
     depends_on:
@@ -50,11 +38,10 @@ services:
     build:
       context: ./book-service
     ports:
-      - '3001:8000'
-    environment:
-      GRPC_PORT: ':8000'
-      MONGODB_URI: 'mongodb://mongo:27017'
-      MONGODB_DATABASE: 'book-service'
+      - "6061:6060"
+      - "3001:8000"
+    env_file:
+      - book-service/.docker.env
     networks:
       - book-lib-microservice
     depends_on:
@@ -64,15 +51,10 @@ services:
     build:
       context: ./lending-service
     ports:
-      - '3002:8000'
-    environment:
-      GRPC_PORT: ':8000'
-      MONGODB_URI: 'mongodb://mongo:27017'
-      MONGODB_DATABASE: 'lending-service'
-      USER_SERVICE_HOST: 'user-service'
-      USER_SERVICE_PORT: ':8000'
-      BOOK_SERVICE_HOST: 'book-service'
-      BOOK_SERVICE_PORT: ':8000'
+      - "6062:6060"
+      - "3002:8000"
+    env_file:
+      - lending-service/.docker.env
     networks:
       - book-lib-microservice
     depends_on:
@@ -82,7 +64,7 @@ services:
   mongo:
     image: mongo:4.2
     ports:
-      - '37017:27017'
+      - "37017:27017"
     command: mongod
     networks:
       - book-lib-microservice
