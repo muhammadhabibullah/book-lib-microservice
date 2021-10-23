@@ -1,15 +1,15 @@
-FROM golang:1.15-alpine AS build
+FROM golang:1.17-alpine AS build
 
 WORKDIR /build
 
 ADD . .
 
-RUN go build -o api-gateway
+RUN go build -o api-gateway-app
 
 FROM alpine
 
 WORKDIR /usr/local/bin
 
-COPY --from=build /build/api-gateway .
+COPY --from=build /build/api-gateway-app .
 
-CMD ["api-gateway"]
+CMD ["api-gateway-app"]
