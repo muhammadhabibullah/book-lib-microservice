@@ -15,7 +15,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/joho/godotenv"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/config"
 	"google.golang.org/grpc"
 
 	grpcClient "api-gateway/internal/grpc"
@@ -34,6 +39,28 @@ func init() {
 }
 
 func main() {
+	cfg, err := config.FromEnv()
+	if err != nil {
+		log.Printf("Error load jaeger client env: %v", err)
+	}
+	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
+	if err != nil {
+		log.Printf("Error init Jaeger: %v", err)
+	}
+	defer func() {
+		if err := closer.Close(); err != nil {
+			log.Printf("Error closing tracer: %v", err)
+		}
+	}()
+	opentracing.SetGlobalTracer(tracer)
+
+	baseLogger := logrus.New()
+	baseLogger.SetFormatter(&logrus.JSONFormatter{
+		FieldMap: logrus.FieldMap{
+			logrus.FieldKeyLevel: "severity",
+		},
+	})
+
 	pprofServer := new(http.Server)
 	enableProf, _ := strconv.ParseBool(os.Getenv("ENABLE_PPROF"))
 	if enableProf {
@@ -99,6 +126,7 @@ func main() {
 	bookGRPCClientConn, err := grpc.DialContext(
 		grpcDialCtx,
 		fmt.Sprintf("%s%s", os.Getenv("BOOK_SERVICE_HOST"), os.Getenv("BOOK_SERVICE_PORT")),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
@@ -109,6 +137,7 @@ func main() {
 	lendingGRPCClientConn, err := grpc.DialContext(
 		grpcDialCtx,
 		fmt.Sprintf("%s%s", os.Getenv("LENDING_SERVICE_HOST"), os.Getenv("LENDING_SERVICE_PORT")),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
@@ -142,8 +171,7 @@ func main() {
 		Handler: server,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	ctx, shutdown := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
@@ -151,6 +179,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
+		shutdown()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
