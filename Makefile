@@ -9,7 +9,7 @@ check-docker-env:
 	docker-compose --env-file .docker-compose.env config -q
 
 run-docker: check-docker-env
-	docker-compose --env-file .docker-compose.env up --build -d
+	docker-compose --env-file .docker-compose.env up --build -d $(SERVICE)
 
 run-db-docker: check-docker-env
 	docker-compose --env-file .docker-compose.env up --build -d mongo

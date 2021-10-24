@@ -1,8 +1,4 @@
 .idea/
-*.prof
-*.mprof
-user-service-*
-book-service-*
-lending-service-*
-api-gateway-app
+profile/
+bin/
 *.env

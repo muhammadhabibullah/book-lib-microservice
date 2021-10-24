@@ -3,7 +3,7 @@ env:
 	cp .docker.env.example .docker.env
 
 build-app:
-	go build -o api-gateway-app
+	go build -o bin/api-gateway-app
 
 run-app: build-app
-	./api-gateway-app
+	bin/api-gateway-app

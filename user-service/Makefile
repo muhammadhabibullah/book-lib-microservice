@@ -3,13 +3,13 @@ env:
 	cp .docker.env.example .docker.env
 
 build-app:
-	go build -o user-service-app ./cmd/app
+	go build -o bin/user-service-app ./cmd/app
 
 build-migration:
-	go build -o user-service-migration ./cmd/migration
+	go build -o bin/user-service-migration ./cmd/migration
 
 run-app: build-app
-	./user-service-app
+	bin/user-service-app
 
 run-migration: build-migration
-	./user-service-migration
+	bin/user-service-migration

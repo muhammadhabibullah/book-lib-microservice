@@ -37,8 +37,15 @@ func main() {
 	pprofServer := new(http.Server)
 	enableProf, _ := strconv.ParseBool(os.Getenv("ENABLE_PPROF"))
 	if enableProf {
-		if cpuProfile := os.Getenv("CPU_PPROF_FILE_PATH"); cpuProfile != "" {
-			f, err := os.Create(cpuProfile)
+		profileDirPath := os.Getenv("PPROF_FOLDER_PATH")
+		if _, err := os.Stat(profileDirPath); os.IsNotExist(err) {
+			if err := os.Mkdir(profileDirPath, os.ModePerm); err != nil {
+				log.Println(err)
+			}
+		}
+
+		if cpuProfile := os.Getenv("CPU_PPROF_FILE_NAME"); cpuProfile != "" {
+			f, err := os.Create(fmt.Sprintf("%s/%s", profileDirPath, cpuProfile))
 			if err != nil {
 				log.Println(err)
 			} else {
@@ -51,8 +58,8 @@ func main() {
 				_ = pprof.StartCPUProfile(f)
 			}
 		}
-		if memProfile := os.Getenv("MEMORY_PPROF_FILE_PATH"); memProfile != "" {
-			f, err := os.Create(memProfile)
+		if memProfile := os.Getenv("MEMORY_PPROF_FILE_NAME"); memProfile != "" {
+			f, err := os.Create(fmt.Sprintf("%s/%s", profileDirPath, memProfile))
 			if err != nil {
 				log.Println(err)
 			} else {

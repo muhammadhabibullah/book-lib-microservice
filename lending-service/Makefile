@@ -3,13 +3,13 @@ env:
 	cp .docker.env.example .docker.env
 
 build-app:
-	go build -o lending-service-app ./cmd/app
+	go build -o bin/lending-service-app ./cmd/app
 
 build-migration:
-	go build -o lending-service-migration ./cmd/migration
+	go build -o bin/lending-service-migration ./cmd/migration
 
 run-app: build-app
-	./lending-service-app
+	bin/lending-service-app
 
 run-migration: build-migration
-	./lending-service-migration
+	bin/lending-service-migration

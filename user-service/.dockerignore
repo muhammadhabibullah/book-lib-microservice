@@ -1,4 +1,3 @@
 .env
-*.prof
-*.mprof
-user-service-*
+profile/
+bin/

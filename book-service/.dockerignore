@@ -1,4 +1,3 @@
 .env
-*.prof
-*.mprof
-book-service-*
+profile/
+bin/
