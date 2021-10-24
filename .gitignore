@@ -5,3 +5,4 @@ user-service-*
 book-service-*
 lending-service-*
 api-gateway-app
+*.env

@@ -1,4 +1,4 @@
-.env
+.env.example
 *.prof
 *.mprof
 lending-service-*

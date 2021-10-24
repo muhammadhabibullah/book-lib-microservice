@@ -1,3 +1,7 @@
+env:
+	cp .env.example .env &
+	cp .docker.env.example .docker.env
+
 build-app:
 	go build -o user-service-app ./cmd/app
 

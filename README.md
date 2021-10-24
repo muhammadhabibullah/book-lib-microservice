@@ -39,7 +39,7 @@ This repository consists of several microservices based on the domain:
 
 ### Tech stack
 
-- Go 1.15
+- Go 1.17
 - GraphQL with JWT auth
 - gRPC
 - MongoDB
@@ -50,10 +50,10 @@ This repository consists of several microservices based on the domain:
 1. Build all services and database
 
 ``` bash
-docker-compose up --build -d
+make env && make run-app-docker
 ```
 
-2. Go to [http://localhost:8000/query](http://localhost:8000/query) to start request.
+2. Go to [http://localhost:8000](http://localhost:8000) to start request from GraphQL playground.
 
 3. Query example:
 
