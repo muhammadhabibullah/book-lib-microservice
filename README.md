@@ -50,7 +50,7 @@ This repository consists of several microservices based on the domain:
 1. Build all services and database
 
 ``` bash
-make env && make run-app-docker
+make env && make run-docker
 ```
 
 2. Go to [http://localhost:8000](http://localhost:8000) to start request from GraphQL playground.
