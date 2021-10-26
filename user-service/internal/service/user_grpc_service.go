@@ -58,7 +58,7 @@ func (s *UserGRPCService) Login(ctx context.Context, request *proto.LoginRequest
 	user, err := s.userRepository.FindByEmail(ctx, request.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, status.Errorf(codes.NotFound, "account with %s email is not found", user.Email)
+			return nil, status.Errorf(codes.NotFound, "account with %s email is not found", request.Email)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
