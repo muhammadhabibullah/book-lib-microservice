@@ -14,6 +14,9 @@ run-docker: check-docker-env
 run-db-docker: check-docker-env
 	docker-compose --env-file .docker-compose.env up --build -d mongo
 
+down-docker: check-docker-env
+	docker-compose --env-file .docker-compose.env down
+
 stop-app-docker: check-docker-env
 	docker-compose --env-file .docker-compose.env stop -t 5 api-gateway user-service book-service lending-service
 
