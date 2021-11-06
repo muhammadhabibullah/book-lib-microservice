@@ -23,7 +23,18 @@ stop-app-docker: check-docker-env
 stop-db-docker: check-docker-env
 	docker-compose --env-file .docker-compose.env stop -t 5 mongo
 
-run-app-local:
+run-migration-local:
+	cd ./book-service && $(MAKE) run-migration &
+	cd ./lending-service && $(MAKE) run-migration &
+	cd ./user-service && $(MAKE) run-migration
+
+build-app-local:
+	cd ./api-gateway && $(MAKE) build-app &
+	cd ./book-service && $(MAKE) build-app &
+	cd ./lending-service && $(MAKE) build-app &
+	cd ./user-service && $(MAKE) build-app
+
+run-app-local: build-app-local
 	cd ./api-gateway && $(MAKE) run-app &
 	cd ./book-service && $(MAKE) run-app &
 	cd ./lending-service && $(MAKE) run-app &
